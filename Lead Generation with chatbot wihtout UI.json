@@ -1,0 +1,1711 @@
+{
+  "name": "Lead Generation with chatbot wihtout UI",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.item.json.output[0].content[0].text;\nconst cleaned = raw.replace(/```json|```/g, '').trim();\n\nlet analysis;\ntry {\n  analysis = JSON.parse(cleaned);\n} catch (e) {\n  throw new Error(`Failed to parse AI analysis output: ${e.message}\\nRaw: ${cleaned.slice(0, 200)}`);\n}\n\nreturn { json: analysis, pairedItem: { item: 0 } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1936,
+        688
+      ],
+      "id": "7e05da0d-a407-4395-a43b-f21be7a796c8",
+      "name": "Code in JavaScript5"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.item.json.output[0].content[0].text;\nlet cleaned = raw.replace(/```json|```/g, '').trim();\n\nfunction sanitizeJson(str) {\n  let result = '';\n  let inString = false;\n  const validEscapes = new Set(['\"', '\\\\', '/', 'b', 'f', 'n', 'r', 't', 'u']);\n\n  for (let i = 0; i < str.length; i++) {\n    const char = str[i];\n\n    if (char === '\\\\' && inString) {\n      const nextChar = str[i + 1];\n      if (validEscapes.has(nextChar)) {\n        // valid escape sequence, keep both characters as-is\n        result += char + nextChar;\n        i++; // skip the next character, already consumed\n        continue;\n      } else {\n        // invalid escape — double the backslash so it becomes a literal \\ in the parsed string\n        result += '\\\\\\\\';\n        continue;\n      }\n    }\n\n    if (char === '\"' && str[i - 1] !== '\\\\') {\n      inString = !inString;\n      result += char;\n      continue;\n    }\n\n    if (inString) {\n      if (char === '\\n') { result += '\\\\n'; continue; }\n      if (char === '\\r') { result += '\\\\r'; continue; }\n      if (char === '\\t') { result += '\\\\t'; continue; }\n      const code = char.charCodeAt(0);\n      if (code < 0x20) {\n        result += '\\\\u' + code.toString(16).padStart(4, '0');\n        continue;\n      }\n    }\n\n    result += char;\n  }\n  return result;\n}\n\ncleaned = sanitizeJson(cleaned);\n\nlet site;\ntry {\n  site = JSON.parse(cleaned);\n} catch (e) {\n  throw new Error(`Failed to parse site generation output: ${e.message}\\nRaw: ${cleaned.slice(0, 500)}`);\n}\n\nreturn { json: site, pairedItem: { item: 0 } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2496,
+        320
+      ],
+      "id": "5362072e-27ce-4783-b64f-151011e0a6e5",
+      "name": "Code in JavaScript6"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a business analyst reviewing a company's website content.\nReturn ONLY a JSON object (no markdown fences, no explanation) with \nthis exact structure:\n\n{\n  \"niche\": \"string\",\n  \"targetAudience\": \"string\",\n  \"brandTone\": \"string\",\n  \"primaryCTA\": \"string\",\n  \"painPoints\": [\"array of strings\"],\n  \"missingSections\": [\"array of strings\"],\n  \"accessibilityIssues\": [\"array of strings\"],\n  \"designImprovements\": [\"array of strings\"]\n}"
+            },
+            {
+              "content": "=\nWebsite: {{ $('Check if website link exists1').item.json.Website }}\n\nSite content:\n{{$json.data}}\nlinks:\n{{ $json.data.links }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        1568,
+        688
+      ],
+      "id": "ddc4d491-319b-4b8c-9a49-d171bf1fb608",
+      "name": "analysis2",
+      "credentials": {
+        "openAiApi": {
+          "id": "75Z5aOXdLn7xFZYD",
+          "name": "matrix API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "=You are an elite senior frontend designer-developer who builds premium, \naward-quality websites for small businesses. Your work should feel like \nit came from a boutique design agency, not a template generator.\n\nGiven a business analysis and the business's existing site content, \ncompletely redesign and regenerate their website into a refined, modern, \nelite-tier single-page site.\n\nDESIGN PHILOSOPHY:\n- Create a warm, welcoming first impression — the hero section should \n  feel inviting within 2 seconds of loading, not corporate or generic\n- Use generous whitespace and confident typography — pick a clear type \n  scale (e.g. hero 2.5-3.5rem, section headers 1.75-2.25rem) and stick \n  to it consistently\n- Choose a cohesive, intentional color palette derived from the business's \n  existing branding (if present) or their industry's emotional tone — \n  avoid default blue/gray corporate palettes unless it genuinely fits\n- Add subtle, tasteful micro-interactions: smooth hover states on buttons \n  and cards (scale, shadow, or color transitions, 150-250ms ease), \n  scroll-triggered fade/slide-in animations on sections as they enter \n  the viewport, smooth-scroll navigation, and a subtly animated hero \n  (e.g. gentle gradient shift, or fade-in content on load)\n- Every interactive element (buttons, links, form fields) needs a \n  visible, smooth transition state — nothing should feel static or abrupt\n- Use real visual hierarchy: one clear primary CTA per section, \n  supporting text that doesn't compete with headlines\n- Avoid generic stock-template feel: vary section layouts (don't repeat \n  the same centered-text-over-image pattern for every section)\n\nTYPOGRAPHY:\n- Load a high-quality Google Font pairing via <link> tags in the HTML \n  head — never rely on default system fonts (Arial, Times, etc.)\n- Choose ONE distinctive display font for headings (e.g. 'Fraunces', \n  'Playfair Display', 'Clash Display', 'Sora', 'Space Grotesk', or \n  similar character-driven typefaces — pick based on the business's \n  tone: warm/traditional businesses suit serif display fonts, modern/\n  tech-forward businesses suit geometric sans-serifs)\n- Choose ONE clean, highly-readable sans-serif for body text (e.g. \n  'Inter', 'Manrope', 'Plus Jakarta Sans', 'Outfit') — must have \n  excellent readability at small sizes and support the language of \n  the site content\n- Set explicit font-weight values (never rely on default 400 for \n  everything) — use at least 3 weights: a light/regular for body \n  copy, a semibold/bold for subheadings, and a bold/black weight for \n  the hero headline\n- Apply proper letter-spacing: slightly tightened (-0.01 to -0.02em) \n  on large display headings, slightly opened (0.01-0.02em) on \n  uppercase labels or small caps text\n- Set line-height generously for body text (1.6-1.75) and tighter \n  for headings (1.1-1.3)\n- Tables and data (pricing, schedules) deserve the same typographic \n  care as headlines — use the body font with clear weight contrast \n  between labels and values, not default table styling\n- Include <link rel=\"preconnect\"> tags for fonts.googleapis.com and \n  fonts.gstatic.com for faster font loading\n\nLAYOUT & ALIGNMENT (critical — misalignment is the most common flaw \nin generated sites, avoid these mistakes):\n- Apply * { box-sizing: border-box; margin: 0; padding: 0; } as a \n  reset at the very top of the CSS — without this, padding/border \n  will inconsistently expand element widths and break alignment\n- Every section must use a consistent centered container: a wrapper \n  with max-width (e.g. 1200px), margin: 0 auto, and consistent \n  horizontal padding (e.g. 1.5rem-2rem) — apply this SAME container \n  pattern to every section, never mix different max-widths or \n  padding values between sections\n- All flexbox/grid parents need explicit align-items and justify-content \n  values — never leave these to default behavior, as default \n  stretch/start alignment is what causes visually uneven cards, \n  buttons, and columns\n- Card grids (e.g. team members, pricing tiers, testimonials) must \n  use CSS Grid with grid-template-columns: repeat(auto-fit, \n  minmax(XXXpx, 1fr)) and a consistent gap value — never fixed \n  widths with manual margins, which causes uneven wrapping\n- All images inside cards/containers need object-fit: cover and an \n  explicit aspect-ratio or fixed height — without this, differently-\n  sized source images will break card alignment and create ragged rows\n- Buttons within the same row/group must share identical padding, \n  height, and font-size — never let button size vary based on text \n  length alone\n- Vertically align icon+text pairs (e.g. contact details, feature \n  lists) using flexbox with align-items: center — text baseline \n  misalignment next to icons is a common tell of unpolished output\n- Test your own layout logic against a 3-column, 2-column, and \n  1-column breakpoint mentally before finalizing — many alignment \n  bugs only appear at specific viewport widths\n\nINCORPORATE THESE SPECIFIC FINDINGS FROM THE BUSINESS ANALYSIS:\nDesign improvements: {{ $json.designImprovements.join(' | ') }}\nMissing sections to add: {{ $json.missingSections.join(' | ') }}\nPain points to solve: {{ $json.painPoints.join(' | ') }}\nAccessibility issues to fix: {{ $json.accessibilityIssues.join(' | ') }}\n\nTECHNICAL REQUIREMENTS:\n- Mobile-first, fully responsive (test your layout logic mentally at \n  375px, 768px, and 1200px+ widths)\n- Clean semantic HTML5 (header, nav, main, section, article, footer — \n  not div soup)\n- Modern CSS using custom properties (:root variables) for colors, \n  spacing, and transitions, so the design feels systematic, not ad-hoc\n- CSS transitions/animations should use easing curves (e.g. \n  cubic-bezier or ease-in-out), never linear or instant\n- Use IntersectionObserver in vanilla JS for scroll-triggered animations \n  (fade-in-up on sections as they enter view) — no animation libraries\n- Vanilla JavaScript only: mobile nav toggle, smooth scroll, scroll \n  animations, and any interactive elements (accordions, form validation feedback)\n- Fully accessible: proper alt text, ARIA labels where relevant, \n  visible focus states with smooth transitions, sufficient color contrast \n  (WCAG AA minimum), reduced-motion media query respected \n  (@media (prefers-reduced-motion: reduce))\n- SEO-friendly: proper meta tags, meta description, semantic heading \n  hierarchy (one h1, logical h2/h3 nesting)\n\nReturn ONLY a JSON object with this exact structure, no markdown fences, \nno explanation:\n\n{\n  \"html\": \"string - complete index.html content\",\n  \"css\": \"string - complete style.css content\",\n  \"js\": \"string - complete script.js content\"\n}\n\nThe html field should reference style.css and script.js as external files \n(not inline), exactly as they would be linked in a real deployed site.\n\nFor all the scraped links (helpful):\n{{ $('Scrapping1').item.json.data.links }}\nCHATBOT WIDGET (required):\nInclude a floating chat widget in the bottom-right corner of every page:\n- A circular toggle button (chat icon) that expands into a chat panel\n- The panel needs: a message history area, a text input, a send button\n- On send, POST to EXACTLY this URL using fetch() — do not use any other URL, do not use localhost, do not invent or modify this value in any way:\n  {{ $('Renaming Variables1').item.json.chatbotEndpoint }}\n  Body: { \"message\": <user input>, \"companyId\": \"{{ $('Renaming Variables1').item.json.RepoName }}\", \"companyName\": \"{{ $('Extract from CSV1').item.json.Name }}\" }\n- Display the returned \"reply\" field in the message history\n- Style the widget to match the site's color palette and typography\n- Include a friendly opening message, e.g. \"Hi! Ask me anything about our services 👋\""
+            },
+            {
+              "content": "=Business name: {{ $('Extract from CSV1').item.json.Name }}\nOriginal website: {{ $('Check if website link exists1').item.json.Website }}\n\nBusiness analysis:\n{{ JSON.stringify($json) }}\n\nOriginal site content (for reference only — redesign, do not copy):\n{{ $('Scrapping1').item.json.data.markdown }}"
+            }
+          ]
+        },
+        "builtInTools": {
+          "codeInterpreter": true
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        2160,
+        368
+      ],
+      "id": "b069cac4-d0e8-4f6d-84ed-6c9a23c325bd",
+      "name": "Regeneration2",
+      "credentials": {
+        "openAiApi": {
+          "id": "75Z5aOXdLn7xFZYD",
+          "name": "matrix API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3408,
+        576
+      ],
+      "id": "c409e164-b830-4a7f-9c1d-4deb886a26da",
+      "name": "Wait2",
+      "webhookId": "2eaff532-01d5-47fe-b629-1636404b5bbb"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.item.json.output[0].content[0].text;\nlet cleaned = raw.replace(/```json|```/g, '').trim();\n\nfunction sanitizeJson(str) {\n  let result = '';\n  let inString = false;\n  const validEscapes = new Set(['\"', '\\\\', '/', 'b', 'f', 'n', 'r', 't', 'u']);\n  for (let i = 0; i < str.length; i++) {\n    const char = str[i];\n    if (char === '\\\\' && inString) {\n      const nextChar = str[i + 1];\n      if (validEscapes.has(nextChar)) { result += char + nextChar; i++; continue; }\n      else { result += '\\\\\\\\'; continue; }\n    }\n    if (char === '\"' && str[i - 1] !== '\\\\') { inString = !inString; result += char; continue; }\n    if (inString) {\n      if (char === '\\n') { result += '\\\\n'; continue; }\n      if (char === '\\r') { result += '\\\\r'; continue; }\n      if (char === '\\t') { result += '\\\\t'; continue; }\n      const code = char.charCodeAt(0);\n      if (code < 0x20) { result += '\\\\u' + code.toString(16).padStart(4, '0'); continue; }\n    }\n    result += char;\n  }\n  return result;\n}\n\ncleaned = sanitizeJson(cleaned);\n\nlet email;\ntry {\n  email = JSON.parse(cleaned);\n} catch (e) {\n  throw new Error(`Failed to parse email output: ${e.message}\\nRaw: ${cleaned.slice(0, 300)}`);\n}\n\nreturn { json: email, pairedItem: { item: 0 } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3984,
+        576
+      ],
+      "id": "026ce03c-826c-467a-9ef1-6e5c873ed2db",
+      "name": "Code in JavaScript7"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a friendly, professional outreach specialist writing a short \nemail to a local business owner. You're introducing a free website \nredesign concept you built for them, based on their existing site.\n\nTone: warm, personal, non-salesy — like a local professional reaching \nout, not a marketing agency blast. Reference something SPECIFIC from \ntheir business (their name, a real pain point or missing feature you \nnoticed) so it doesn't read like a template.\n\nKeep it short: 4-6 sentences max. No corporate buzzwords. End with a \nclear, low-pressure call to action (view the prototype, reply if \ninterested).\n\nReturn ONLY a JSON object, no markdown fences, no explanation:\n{\n  \"subject\": \"string - short, specific, not spammy-sounding\",\n  \"body\": \"string - the email body as HTML, using <p> tags for paragraphs\"\n}"
+            },
+            {
+              "content": "=Business name: {{ $('Extract from CSV1').item.json.Name }}\nBusiness niche: {{ $('Code in JavaScript5').item.json.niche }}\nPain points identified: {{ $('Code in JavaScript5').item.json.painPoints.join(' | ') }}\nMissing sections identified: {{ $('Code in JavaScript5').item.json.missingSections.join(' | ') }}\n\nPrototype URL: https://{{ $('Pushing into Github1').item.json.owner.login }}.github.io/{{ $('Pushing into Github1').item.json.name }}/"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        3616,
+        576
+      ],
+      "id": "20d46178-5cb1-4b40-a753-1c1ed363f039",
+      "name": "Customize email1",
+      "credentials": {
+        "openAiApi": {
+          "id": "75Z5aOXdLn7xFZYD",
+          "name": "matrix API"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        5152,
+        688
+      ],
+      "id": "19599fa4-b65e-4eec-b927-72a99b813181",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "binaryPropertyName": "csv",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        272,
+        320
+      ],
+      "id": "9f2a292b-2cd2-4076-8ecd-980ea9b19c4d",
+      "name": "Extract from CSV1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "91716400-5d2d-4c94-afca-366f79ad8de1",
+              "name": "Email",
+              "value": "={{ $json.Email }}",
+              "type": "string"
+            },
+            {
+              "id": "9f9f3040-4bb2-4859-ba47-7d4b20e027f0",
+              "name": "﻿Name",
+              "value": "={{ $json.Name }}",
+              "type": "string"
+            },
+            {
+              "id": "895e3112-5ac3-42cb-8f83-8e309315418f",
+              "name": "Website",
+              "value": "={{ $json.Website }}",
+              "type": "string"
+            },
+            {
+              "id": "4f2eb469-fbb5-42f5-b011-4bac1e6fbc06",
+              "name": "RepoName",
+              "value": "={{ $('Extract from CSV1').item.json.Name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + '-repo' }}",
+              "type": "string"
+            },
+            {
+              "id": "3e4e9474-3f18-4a8e-aed6-225d664ebe85",
+              "name": "chatbotEndpoint",
+              "value": "https://overstay-choosy-succulent.ngrok-free.dev/webhook/chat",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        320
+      ],
+      "id": "cf8429f7-450e-4f6e-a330-d7f2f8ad3ed3",
+      "name": "Renaming Variables1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        688,
+        320
+      ],
+      "id": "92fbd9b4-716c-47b7-a61c-b439da0ae8a0",
+      "name": "Loop over CSV1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b652d485-445c-4571-b9e4-f20b172c52da",
+              "leftValue": "={{ $json.Website }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        928,
+        336
+      ],
+      "id": "919f1062-f84b-411a-9a8a-75b7df46bea9",
+      "name": "Check if website link exists1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.firecrawl.dev/v2/scrape",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{ $json.Website }}"
+            },
+            {
+              "name": "formats",
+              "value": "={{ [\"markdown\", \"html\", \"screenshot\", \"links\"] }}"
+            },
+            {
+              "name": "onlyMainContent",
+              "value": "={{ false }}"
+            },
+            {
+              "name": "waitFor",
+              "value": "={{2000}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1280,
+        320
+      ],
+      "id": "30bd7b10-47e8-41d5-b09e-6df1fe2fcd6e",
+      "name": "Scrapping1",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "DVIhcm63fnnW4C1I",
+          "name": "Bearer Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.github.com/user/repos",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "=name",
+              "value": "={{ $('Extract from CSV1').item.json.Name.toLowerCase() + '_repo'}}"
+            },
+            {
+              "name": "auto_init",
+              "value": "={{ true }}"
+            },
+            {
+              "name": "description",
+              "value": "={{ 'AI-generated prototype for ' + $('Extract from CSV1').item.json['Name'] }}"
+            },
+            {
+              "name": "private",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2704,
+        320
+      ],
+      "id": "2741e44c-f0f8-442e-a879-8b08968f3c84",
+      "name": "Pushing into Github1",
+      "alwaysOutputData": false,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "yB6gL23w1BPCg3nh",
+          "name": "Git"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('Pushing into Github1').item.json.owner.login }}"
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('Pushing into Github1').item.json.name }}"
+        },
+        "filePath": "=index.html",
+        "fileContent": "={{ $('Code in JavaScript6').item.json.html }}",
+        "commitMessage": "Add index.html"
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        2960,
+        144
+      ],
+      "id": "54315518-86ba-4a92-90fb-847b44422253",
+      "name": "Pushing HTML1",
+      "webhookId": "1b7b77e5-b973-4d77-becb-79571fecb727",
+      "credentials": {
+        "githubApi": {
+          "id": "UNG2oO8RIQ2pOAic",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('Pushing into Github1').item.json.owner.login }}"
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('Pushing into Github1').item.json.name }}"
+        },
+        "filePath": "=style.css",
+        "fileContent": "={{ $('Code in JavaScript6').item.json.css }}",
+        "commitMessage": "Add style.css"
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        2960,
+        352
+      ],
+      "id": "7bfcd583-d4f6-4652-ad50-7c0b784e1076",
+      "name": "Pushing CSS1",
+      "webhookId": "1b7b77e5-b973-4d77-becb-79571fecb727",
+      "credentials": {
+        "githubApi": {
+          "id": "UNG2oO8RIQ2pOAic",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('Pushing into Github1').item.json.owner.login }}"
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('Pushing into Github1').item.json.name }}"
+        },
+        "filePath": "=script.js",
+        "fileContent": "={{ $('Code in JavaScript6').item.json.js }}",
+        "commitMessage": "Add script.js"
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        2960,
+        576
+      ],
+      "id": "8b88d3a1-e606-4ae2-86d8-2e0c0818d94b",
+      "name": "Pushing JS1",
+      "webhookId": "1b7b77e5-b973-4d77-becb-79571fecb727",
+      "credentials": {
+        "githubApi": {
+          "id": "UNG2oO8RIQ2pOAic",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.github.com/repos/{{ $('Pushing into Github1').item.json.owner.login }}/{{ $('Pushing into Github1').item.json.name }}/pages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"source\": {\n    \"branch\": \"main\",\n    \"path\": \"/\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3184,
+        576
+      ],
+      "id": "14f15be1-f14a-42af-a699-c539f4f016e1",
+      "name": "Getting Prototype Link1",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "yB6gL23w1BPCg3nh",
+          "name": "Git"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d1bd4282-046e-4af5-b32c-fd942ba82409",
+              "leftValue": "={{ $('Extract from CSV1').item.json['Email'] }}",
+              "rightValue": "gmail.com",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        4208,
+        576
+      ],
+      "id": "4f7abfaf-91f7-4b31-84eb-969b86b2f59d",
+      "name": "Check Email1"
+    },
+    {
+      "parameters": {
+        "sendTo": "zaraale5@gmail.com",
+        "subject": "={{ 'A modern website concept for ' + $('Extract from CSV1').item.json['Name'] }}",
+        "message": "={{ $('Code in JavaScript7').item.json.body }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        4544,
+        480
+      ],
+      "id": "8217d0f2-47dd-48d7-94ed-bbae4a98f5db",
+      "name": "Sending Gmail1",
+      "webhookId": "0c87ffe8-1b39-4a98-a641-5981c8468bde",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "J6c5EKrQ8FNjXMFa",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "zaraale5@gmail.com",
+        "toEmail": "={{ $('Extract from CSV1').item.json['Email'] }}",
+        "subject": "={{ 'A modern website concept for ' + $('Extract from CSV1').item.json['Name'] }}",
+        "html": "={{ $('Code in JavaScript7').item.json.body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        4544,
+        688
+      ],
+      "id": "4ead0f76-5350-4768-a0c4-f793c15fc5c6",
+      "name": "Sending Email1",
+      "webhookId": "5e910fbf-9be1-4749-aca2-1b0478893f4a",
+      "credentials": {
+        "smtp": {
+          "id": "HpIhM6OdHbXDXkTO",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "formTitle": "upload csv",
+        "formDescription": "upload the csv",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "csv",
+              "fieldType": "file"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        64,
+        320
+      ],
+      "id": "92b6f11f-a294-433c-9253-5329d590e574",
+      "name": "Uploading CSV1",
+      "webhookId": "aa0fa0d8-6c29-4c15-b3c3-ce2277e00c97"
+    },
+    {
+      "parameters": {
+        "content": "Section for web scrapping and analysis and regenration of the Website",
+        "height": 864,
+        "width": 1472,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1040,
+        16
+      ],
+      "typeVersion": 1,
+      "id": "ab61d223-26bf-49ac-80f7-625b757d9074",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "Section for pushing the files on Github and hosting the websites",
+        "height": 1152,
+        "width": 688,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2672,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "0dd1caa7-53de-4222-9b83-3c3e10c3d7fd",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "Sending the Customized Emails to the companies ",
+        "height": 1152,
+        "width": 1472,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3568,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "b07d6e60-b41b-4ed8-be70-ce8efe9e7fd1",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "content": "Uploading the CSV file, and extracting data from it, passing it through loop.",
+        "height": 1152,
+        "width": 848
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "56b80df4-4702-4c06-819d-1f5e4a96e03d",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "content": "SECOND NODE INTEGRATION , CHATBOT !\n"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -464,
+        352
+      ],
+      "typeVersion": 1,
+      "id": "b2349ae9-43c3-48fb-bcb5-eefdaf49a41b",
+      "name": "Sticky Note10"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        1600,
+        80
+      ],
+      "id": "18858d11-7384-4a3d-8335-97bc4379a0e7",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "mycD4Ifx1Aiqk9QZ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1536,
+        288
+      ],
+      "id": "c11bc92a-acd7-465d-9da1-77ec5be2fe9f",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "75Z5aOXdLn7xFZYD",
+          "name": "matrix API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "companyID",
+                "value": "={{ $('Loop over CSV1').item.json.RepoName }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        1696,
+        288
+      ],
+      "id": "9c034821-bfc5-4041-ab8a-e662e9404dec",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Webhook').item.json.body.message }}",
+        "options": {
+          "systemMessage": "==You are a helpful assistant for {{ $('Webhook').item.json.body.companyName}}, answering customer questions based on their official company documents.\n\nAlways use the \"company_documents_tool\" to look up information before answering. Never answer from general knowledge.\n\nKeep answers under 3-4 sentences, plain conversational text only — no markdown tables or headers.\n\nNever invent prices, availability, or policies not explicitly stated in the documents.\n\nIf the answer isn't in the documents, say so and suggest the customer contact {{ $('Webhook').item.json.body.companyName}} directly for further help."
+        }
+      },
+      "id": "bec6c106-ab64-4cc1-9bff-0cbae30f914c",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        1616,
+        960
+      ],
+      "typeVersion": 1.7
+    },
+    {
+      "parameters": {
+        "name": "company_documents_tool",
+        "description": "Retrieve information from any company documents"
+      },
+      "id": "9df47353-fbc9-4492-8b2b-8a896f9c3f70",
+      "name": "Vector Store Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "position": [
+        2016,
+        1184
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Webhook').item.json.body.message }}"
+      },
+      "id": "362aeeff-dd56-4681-a5fa-886c48c1701d",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "position": [
+        1696,
+        1264
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "companyID",
+                "value": "={{ $('Webhook').item.json.body.companyId }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        1872,
+        1328
+      ],
+      "id": "ef6f2fda-52dd-41c6-910d-48603b67da7e",
+      "name": "Supabase Vector Store1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "mycD4Ifx1Aiqk9QZ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1776,
+        1472
+      ],
+      "id": "46d61d88-2101-4026-b22c-3387992896f2",
+      "name": "Embeddings OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "75Z5aOXdLn7xFZYD",
+          "name": "matrix API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        2256,
+        1312
+      ],
+      "id": "6c18d213-dc56-4899-88fb-30179b31a11f",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "75Z5aOXdLn7xFZYD",
+          "name": "matrix API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1504,
+        1168
+      ],
+      "id": "6fa524d2-7b50-49dc-9673-7b00d9558574",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "75Z5aOXdLn7xFZYD",
+          "name": "matrix API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        1232,
+        992
+      ],
+      "id": "0fa162af-620e-46d2-b43f-c58e13c13a35",
+      "name": "Webhook",
+      "webhookId": "c58240f2-a0d5-4f0f-91cd-86ef0302647f",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { reply: $json.output } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1872,
+        960
+      ],
+      "id": "4cfe12c6-ab15-415c-9319-4c727a8ef3ab",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "content": "Chat bot feature\n",
+        "height": 704,
+        "width": 1472,
+        "color": "#4D4747"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1040,
+        912
+      ],
+      "typeVersion": 1,
+      "id": "8fc3766e-5b16-497a-960a-19e010b72f42",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "binaryPropertyName": "audio",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        1216,
+        1968
+      ],
+      "id": "61932b3e-603c-45f5-8adf-b59c5bdf62d6",
+      "name": "Transcribe a recording",
+      "credentials": {
+        "openAiApi": {
+          "id": "75Z5aOXdLn7xFZYD",
+          "name": "matrix API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "input": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        2176,
+        1968
+      ],
+      "id": "d3908337-8795-467e-84f0-612b7cc959c4",
+      "name": "Generate audio",
+      "credentials": {
+        "openAiApi": {
+          "id": "75Z5aOXdLn7xFZYD",
+          "name": "matrix API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const audioBuffer = await this.helpers.getBinaryDataBuffer(0, 'data');\n\nreturn [{\n  json: {\n    replyText: $('Voice AI Agent').item.json.output,\n    replyAudioBase64: audioBuffer.toString('base64')\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2384,
+        1968
+      ],
+      "id": "410efc74-60dd-4e3b-a874-d02310a7fe79",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        2256,
+        2496
+      ],
+      "id": "6d502691-b615-452d-a191-ccecc02a1917",
+      "name": "OpenAI Chat Model4",
+      "credentials": {
+        "openAiApi": {
+          "id": "75Z5aOXdLn7xFZYD",
+          "name": "matrix API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "voice-chat",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "All Headers",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        992,
+        1968
+      ],
+      "id": "e5f796ec-a499-4f90-885e-e5147009664e",
+      "name": "Webhook1",
+      "webhookId": "dac91d17-8303-4108-8da2-2db4f7226628"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "options": {
+          "systemMessage": "==You are a helpful voice assistant for {{ $('Webhook1').item.json.body.companyName }}, answering caller questions based on their official company documents.\n\nAlways use the \"company_documents_tool\" to look up information before answering. Never answer from general knowledge.\n\nKeep answers short and conversational — 2-3 sentences max, since this will be spoken aloud. No lists, no markdown, no special formatting.\n\nNever invent prices, availability, or medical advice not explicitly stated in the documents. For any question requiring clinical judgment, tell the caller to speak with clinic staff directly.\n\nIf the answer isn't in the documents, say so and suggest the caller contact {{ $('Webhook1').item.json.body.companyName }} directly for further help."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1632,
+        1968
+      ],
+      "id": "f6cbebce-7ae0-4ae0-bc31-bb165846e5c4",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1632,
+        2192
+      ],
+      "id": "47671d5e-a84e-48d2-b013-8276c117a75e",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "75Z5aOXdLn7xFZYD",
+          "name": "matrix API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2592,
+        1968
+      ],
+      "id": "a6cbc344-7c0c-4825-a194-3ac31d016457",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Webhook1').item.json.body.companyId + '-voice' }}"
+      },
+      "id": "637ff4e7-fad6-4f79-9dab-be0d2ba2beac",
+      "name": "Window Buffer Memory1",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "position": [
+        1728,
+        2368
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "name": "company_documents_tool",
+        "description": "Retrieve information from any company documents"
+      },
+      "id": "90f6e06c-ab76-4a5a-b150-aec51565f093",
+      "name": "Vector Store Tool1",
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "position": [
+        1936,
+        2320
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "companyID",
+                "value": "={{ $('Webhook1').item.json.body.companyId }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        1952,
+        2640
+      ],
+      "id": "c65f11c4-6794-44dd-94b9-bbf4cc76393f",
+      "name": "Supabase Vector Store2",
+      "credentials": {
+        "supabaseApi": {
+          "id": "mycD4Ifx1Aiqk9QZ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1952,
+        2832
+      ],
+      "id": "c4bdfe6f-0571-4e7a-87b7-07349fbc1778",
+      "name": "Embeddings OpenAI2",
+      "credentials": {
+        "openAiApi": {
+          "id": "75Z5aOXdLn7xFZYD",
+          "name": "matrix API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Code in JavaScript5": {
+      "main": [
+        [
+          {
+            "node": "Regeneration2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript6": {
+      "main": [
+        [
+          {
+            "node": "Pushing into Github1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "analysis2": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Regeneration2": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait2": {
+      "main": [
+        [
+          {
+            "node": "Customize email1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript7": {
+      "main": [
+        [
+          {
+            "node": "Check Email1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Customize email1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Loop over CSV1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from CSV1": {
+      "main": [
+        [
+          {
+            "node": "Renaming Variables1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Renaming Variables1": {
+      "main": [
+        [
+          {
+            "node": "Loop over CSV1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop over CSV1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Check if website link exists1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if website link exists1": {
+      "main": [
+        [
+          {
+            "node": "Scrapping1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrapping1": {
+      "main": [
+        [
+          {
+            "node": "analysis2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Supabase Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pushing into Github1": {
+      "main": [
+        [
+          {
+            "node": "Pushing HTML1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Pushing CSS1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Pushing JS1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pushing JS1": {
+      "main": [
+        [
+          {
+            "node": "Getting Prototype Link1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Getting Prototype Link1": {
+      "main": [
+        [
+          {
+            "node": "Wait2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Email1": {
+      "main": [
+        [
+          {
+            "node": "Sending Gmail1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sending Email1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sending Gmail1": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sending Email1": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Uploading CSV1": {
+      "main": [
+        [
+          {
+            "node": "Extract from CSV1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vector Store Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store1": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Vector Store Tool",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Vector Store Tool",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate audio": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Vector Store Tool1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Generate audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory1": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vector Store Tool1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store2": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Vector Store Tool1",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI2": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store2",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "e119430e-c27f-4257-9aba-39f838fe6520",
+  "meta": {
+    "instanceId": "15eb5b52ddcd72a22f594305e975c9e093c91c74747119751322c4c1824f2385"
+  },
+  "nodeGroups": [],
+  "id": "hdCxlRFJ0bXS6UaH",
+  "tags": [
+    {
+      "updatedAt": "2026-07-02T09:13:23.422Z",
+      "createdAt": "2026-07-02T09:13:23.422Z",
+      "id": "fnluSAvPEQed1yUn",
+      "name": "Project"
+    }
+  ]
+}
